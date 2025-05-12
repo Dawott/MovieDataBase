@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client & Movie Management</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Client & Movie Management</h1>
+
+    <section>
+        <h2>Clients</h2>
+        <form id="addClientForm">
+            <input type="text" id="clientName" placeholder="Name" required>
+            <input type="text" id="clientLastname" placeholder="Lastname" required>
+            <button type="submit">Add Client</button>
+        </form>
+        <ul id="clientList"></ul>
+    </section>
+
+    <section>
+        <h2>Movies</h2>
+        <form id="addMovieForm">
+            <input type="text" id="movieName" placeholder="Name" required>
+            <input type="text" id="movieType" placeholder="Type" required>
+            <input type="number" step="0.1" id="movieRating" placeholder="Rating" required>
+            <input type="number" id="movieClientID" placeholder="Client ID" required>
+            <button type="submit">Add Movie</button>
+        </form>
+        <ul id="movieList"></ul>
+    </section>
+
+    <script src="script.js"></script>
+</body>
+</html>
