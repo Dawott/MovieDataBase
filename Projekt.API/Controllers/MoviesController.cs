@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Projekt.API.Model;
+using Microsoft.AspNetCore.StaticFiles;
 
 namespace Projekt.API.Controllers
 {
@@ -109,7 +110,81 @@ namespace Projekt.API.Controllers
         {
             return _db.Movies.Any(e => e.ID == id);
         }
-        
+
+        [ActionName("UploadCover")]
+        [HttpPost("{id}")]
+        public async Task<IActionResult> UploadCover(int id, IFormFile file)
+        {
+            var movie = await _db.Movies.FindAsync(id);
+            if (movie == null) return NotFound();
+
+            if (file == null || file.Length == 0)
+                return BadRequest("Nie przesłano pliku.");
+
+            if (file.Length > 5_000_000)
+                return BadRequest("Plik jest zbyt duży (max 5MB)");
+
+            var uploads = Path.Combine(Directory.GetCurrentDirectory(), "Uploads", "Covers");
+            Directory.CreateDirectory(uploads);
+
+            var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+            var filePath = Path.Combine(uploads, fileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            movie.CoverImagePath = fileName;
+            await _db.SaveChangesAsync();
+
+            return Ok(new { fileName });
+        }
+
+        [ActionName("DownloadCover")]
+        [HttpGet("{id}")]
+        public IActionResult DownloadCover(int id)
+        {
+            var movie = _db.Movies.Find(id);
+            if (movie?.CoverImagePath == null) return NotFound();
+
+            var path = Path.Combine(Directory.GetCurrentDirectory(), "Uploads", "Covers", movie.CoverImagePath);
+            if (!System.IO.File.Exists(path)) return NotFound();
+
+            var provider = new FileExtensionContentTypeProvider();
+            if (!provider.TryGetContentType(path, out var contentType))
+                contentType = "application/octet-stream";
+
+            var fileBytes = System.IO.File.ReadAllBytes(path);
+            return File(fileBytes, contentType, movie.CoverImagePath);
+        }
+
+
+        [ActionName("DeleteCover")]
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteCover(int id)
+        {
+            var movie = await _db.Movies.FindAsync(id);
+            if (movie == null)
+                return NotFound("Nie znaleziono filmu!");
+
+            if (string.IsNullOrEmpty(movie.CoverImagePath))
+                return BadRequest("Ten film nie ma okładki do usunięcia.");
+
+            // Ścieżka do pliku
+            var path = Path.Combine(Directory.GetCurrentDirectory(), "Uploads", "Covers", movie.CoverImagePath);
+
+            // Usuń plik, jeśli istnieje
+            if (System.IO.File.Exists(path))
+                System.IO.File.Delete(path);
+
+            // Usuń informację z bazy
+            movie.CoverImagePath = null;
+            await _db.SaveChangesAsync();
+
+            return Ok("Okładka została usunięta.");
+        }
     }
 
 }
+

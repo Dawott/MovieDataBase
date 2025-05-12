@@ -65,10 +65,14 @@ async function loadMovies() {
         movies.forEach(movie => {
             const li = document.createElement("li");
             li.innerHTML = `
-                ${movie.name} (${movie.type}) - Rating: ${movie.rating} 
+                ${movie.name} (${movie.type}) - Rating: ${movie.rating}
+                ${movie.coverImagePath ?
+                    `<img src="https://localhost:7267/Uploads/Covers/${movie.coverImagePath}" style="height:50px; margin-right:10px;">
+                <button onclick="deleteCover(${movie.id})">Usun okladke</button>`
+                    : ''}
                 <button onclick="deleteMovie(${movie.id})">Delete</button>
                 <button onclick="editMovie(${movie.id}, '${movie.name}', '${movie.type}', ${movie.rating}, ${movie.clientID})">Edytuj</button>
-            `;
+                `;
             movieList.appendChild(li);
         });
     } catch (error) {
@@ -153,6 +157,51 @@ async function editMovie(id, currentName, currentType, currentRating, currentCli
         } catch (error) {
             console.error("B³¹d podczas edycji filmu:", error);
         }
+    }
+}
+
+// Upload cover
+document.getElementById('uploadCoverForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const file = document.getElementById('coverFile').files[0];
+    const movieId = document.getElementById('movieIdForCover').value;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const response = await fetch(`${API_BASE}/Movies/UploadCover/${movieId}`, {
+            method: 'POST',
+            body: formData
+        });
+        if (response.ok) {
+            const result = await response.json();
+            alert(`Upload successful: ${result.fileName}`);
+            loadMovies(); // odœwie¿ listê filmów
+        } else {
+            const error = await response.text();
+            alert("Upload failed: " + error);
+        }
+    } catch (error) {
+        console.error('Upload failed', error);
+    }
+});
+
+async function deleteCover(movieId) {
+    if (!confirm("Czy na pewno chcesz usunac okladke tego filmu?")) return;
+    try {
+        const response = await fetch(`${API_BASE}/Movies/DeleteCover/${movieId}`, {
+            method: "DELETE"
+        });
+        if (response.ok) {
+            alert("Okladka usunieta!");
+            loadMovies();
+        } else {
+            const error = await response.text();
+            alert("B³¹d: " + error);
+        }
+    } catch (error) {
+        alert("Blad polaczenia!");
     }
 }
 

@@ -15,5 +15,7 @@ namespace Projekt.API.Model
 
 
         public ICollection<Client>? Clients { get; set; }    //do kontrolera jak cos
+
+        public string? CoverImagePath { get; set; }
     }
 }
