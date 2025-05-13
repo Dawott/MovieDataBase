@@ -100,7 +100,7 @@ namespace Projekt.API.Controllers
             movie.Name = updatedMovie.Name;
             movie.Type = updatedMovie.Type;
             movie.Rating = updatedMovie.Rating;
-            movie.ClientID = updatedMovie.ClientID;
+            //movie.ClientID = updatedMovie.ClientID;
 
             await _db.SaveChangesAsync();
             return Ok();
