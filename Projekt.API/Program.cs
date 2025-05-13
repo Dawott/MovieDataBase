@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Projekt.API.Model;
 using Microsoft.Extensions.FileProviders;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +16,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+//Dodano serwis Serilog
+builder.Host.UseSerilog((ctx, lc) => lc.WriteTo.Console().ReadFrom.Configuration(ctx.Configuration));
 
 //CORS
 
@@ -46,9 +49,7 @@ app.UseStaticFiles(new StaticFileOptions
 
 //CORS  
 app.UseCors("AllowAll");
-
+app.UseSerilogRequestLogging();
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();

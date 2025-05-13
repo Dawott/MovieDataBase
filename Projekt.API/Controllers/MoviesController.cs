@@ -38,7 +38,7 @@ namespace Projekt.API.Controllers
         }
         // GET: api/Movies/ByID/1
         [ActionName("ByID")]
-        [HttpGet("{id:range(1,200)}")]
+        [HttpGet] //("{id:range(1,200)}") - range niepotrzebny
         public Movie? GetByID(int id)
         {
             var movie = _db.Movies.Find(id);

@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Client & Movie Management</title>
+    <title>Zarządzanie Klientami i Filmami</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Client & Movie Management</h1>
+    <h1>Zarządzanie Klientami i Filmami</h1>
 
     <section>
-        <h2>Clients</h2>
+        <h2>Klienci</h2>
         <form id="addClientForm">
             <input type="text" id="clientName" placeholder="Name" required>
             <input type="text" id="clientLastname" placeholder="Lastname" required>
-            <button type="submit">Add Client</button>
+            <button type="submit">Dodaj Klienta</button>
         </form>
         <ul id="clientList"></ul>
     </section>
@@ -26,7 +26,7 @@
             <input type="text" id="movieType" placeholder="Type" required>
             <input type="number" step="0.1" id="movieRating" placeholder="Rating" required>
             <input type="number" id="movieClientID" placeholder="Client ID" required>
-            <button type="submit">Add Movie</button>
+            <button type="submit">Dodaj Film</button>
         </form>
         <ul id="movieList"></ul>
     </section>
@@ -35,7 +35,7 @@
     <form id="uploadCoverForm">
         <input type="file" id="coverFile" accept="image/*" required>
         <input type="number" id="movieIdForCover" placeholder="Movie ID" required>
-        <button type="submit">Upload Cover</button>
+        <button type="submit">Wrzuć okładkę</button>
     </form>
 
     <script src="script.js"></script>
