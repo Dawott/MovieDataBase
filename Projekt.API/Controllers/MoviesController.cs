@@ -8,101 +8,135 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Projekt.API.Model;
 using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.AspNetCore.Authorization;
+using static Projekt.API.DTOs.MoviesDTO;
 
 namespace Projekt.API.Controllers
 {
     [Route("api/[Controller]/[action]")]
     [ApiController]
-    public class MoviesController(MoviesDBContext context) : ControllerBase
+    [Authorize]
+    public class MoviesController : ControllerBase
     {
-        private readonly MoviesDBContext _db = context;
+        private readonly MoviesDBContext _db;
+        private readonly ILogger<MoviesController> _logger;
+
+       public MoviesController(MoviesDBContext context, ILogger<MoviesController> logger)
+        {
+            _db = context;
+            _logger = logger;
+        }
 
         // GET: api/Movies/list
         [ActionName("List")]
         [HttpGet]
+        [AllowAnonymous] //Wszyscy mogą widzieć listę filmów
         public async Task<ActionResult<List<Movie>>> GetListAsync()
         {
             try
             {
-                await Task.Delay(3000);
-                return Ok(await _db.Movies.ToListAsync());
+                await Task.Delay(1000);
+                var movies = await _db.Movies
+                     .Include(m => m.Ratings)
+                     .ToListAsync();
+                //Kalkulacja Ratingu - ale do sprawdzenia, czy nie można tego jakoś mądrzej zliczać
+                foreach (var movie in movies)
+                {
+                    if (movie.Ratings != null && movie.Ratings.Any())
+                    {
+                        movie.Rating = Math.Round(movie.Ratings.Average(r => r.Value), 1);
+                    }
+                }
+
+                return Ok(movies);
             }
             catch (Exception ex)
             {
-                var exception = ex;
-                while (exception.InnerException != null)
-                    exception = exception.InnerException;
-
-                return new ObjectResult(exception.Message) { StatusCode = (int)HttpStatusCode.InternalServerError };
+                _logger.LogError(ex, "Pojawił się błąd w zwracaniu filmów");
+                return StatusCode(500, "Pojawił się błąd w zwracaniu filmów");
             }
         }
+
         // GET: api/Movies/ByID/1
         [ActionName("ByID")]
         [HttpGet] //("{id:range(1,200)}") - range niepotrzebny
-        public Movie? GetByID(int id)
+        [AllowAnonymous]
+        public async Task<ActionResult<Movie>> GetByID(int id)
         {
-            var movie = _db.Movies.Find(id);
+            var movie = await _db.Movies
+                .Include(m => m.Ratings)
+                    .ThenInclude(r => r.Client)
+                .FirstOrDefaultAsync(m => m.ID == id);
 
             if (movie == null)
-                throw new Exception($"Movies with id {id} does not exist!");
-
-
-            return movie;
+                return NotFound($"Film z ID {id} nie istnieje!");
+            //Tak samo liczenie ratingu - jak wyżej
+            if (movie.Ratings != null && movie.Ratings.Any())
+            {
+                movie.Rating = Math.Round(movie.Ratings.Average(r => r.Value), 1);
+            }
+            return Ok(movie);
         }
-
-
-
 
         // POST: api/Movies/Add
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [ActionName("Add")]
         [HttpPost]
-        public async Task<ActionResult<int>> PostAdd(Movie newMovie)
+        [Authorize(Policy = "AdminOnly")]
+        public async Task<ActionResult<int>> PostAdd([FromBody] Movie newMovie)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var MovieDB = await _db.Movies.FirstOrDefaultAsync(m => m.Name == newMovie.Name);
-            if (MovieDB != null)
-                return Conflict($"Movie with name {newMovie.Name} already exist");
+            var existingMovie = await _db.Movies.FirstOrDefaultAsync(m => m.Name == newMovie.Name);
+            if (existingMovie != null)
+                return Conflict($"Film pod nazwą {newMovie.Name} już istnieje!");
 
+            newMovie.IsAvailable = true; // By default nowe filmy będą dostępne
             _db.Movies.Add(newMovie);
             await _db.SaveChangesAsync();
+
+            _logger.LogInformation($"Dodano film: {newMovie.Name} (ID: {newMovie.ID})");
             return Ok(newMovie.ID);
 
         }
 
         // DELETE: api/Movies/5
         [ActionName("Delete")]
-        [HttpDelete]
+        [HttpDelete("{id}")] //Precyzuję tutaj ID
+        [Authorize(Policy = "AdminOnly")]
         public async Task<ActionResult> Delete(int id)
         {
             var movie = _db.Movies.Find(id);
             if (movie == null)
-                return Conflict($"Movie with id {id} does not exist!");
+                return NotFound($"Film z ID {id} nie istnieje!");
 
             _db.Movies.Remove(movie);
             await _db.SaveChangesAsync();
 
+            _logger.LogInformation($"Usunięto film: {movie.Name} (ID: {id})");
             return Ok();
         }
 
         //api/Movie/Update
         [ActionName("Update")]
         [HttpPut]
-        public async Task<ActionResult> PutUpdate(Movie updatedMovie)
+        [Authorize(Policy = "AdminOnly")]
+        public async Task<ActionResult> PutUpdate([FromBody] Movie updatedMovie)
         {
             var movie = await _db.Movies.FindAsync(updatedMovie.ID);
             if (movie == null)
-                return Conflict($"Movie {updatedMovie.Name} does not exist!");
+                return NotFound($"Film {updatedMovie.Name} nie istnieje!");
 
             // Aktualizuj WSZYSTKIE pola
             movie.Name = updatedMovie.Name;
             movie.Type = updatedMovie.Type;
-            movie.Rating = updatedMovie.Rating;
+            movie.IsAvailable = updatedMovie.IsAvailable;
+            //movie.Rating = updatedMovie.Rating;
             //movie.ClientID = updatedMovie.ClientID;
 
             await _db.SaveChangesAsync();
+            _logger.LogInformation($"Uaktualniono film: {movie.Name} (ID: {movie.ID})");
             return Ok();
         }
 
@@ -113,6 +147,7 @@ namespace Projekt.API.Controllers
 
         [ActionName("UploadCover")]
         [HttpPost("{id}")]
+        [Authorize(Policy = "AdminOnly")]
         public async Task<IActionResult> UploadCover(int id, IFormFile file)
         {
             var movie = await _db.Movies.FindAsync(id);
@@ -143,6 +178,7 @@ namespace Projekt.API.Controllers
 
         [ActionName("DownloadCover")]
         [HttpGet("{id}")]
+        [AllowAnonymous]
         public IActionResult DownloadCover(int id)
         {
             var movie = _db.Movies.Find(id);
@@ -162,6 +198,7 @@ namespace Projekt.API.Controllers
 
         [ActionName("DeleteCover")]
         [HttpDelete("{id}")]
+        [Authorize(Policy = "AdminOnly")]
         public async Task<IActionResult> DeleteCover(int id)
         {
             var movie = await _db.Movies.FindAsync(id);
@@ -183,6 +220,157 @@ namespace Projekt.API.Controllers
             await _db.SaveChangesAsync();
 
             return Ok("Okładka została usunięta.");
+        }
+
+        // NOWE ZAPYTANIA
+        // Wypożyczenie
+        [ActionName("Rent")]
+        [HttpPost("{id}")]
+        [Authorize(Policy = "ClientOnly")] // Tylko klienci mogą wypożyczać
+        public async Task<ActionResult> RentMovie(int id)
+        {
+            var clientIdClaim = User.FindFirst("clientId")?.Value;
+            if (string.IsNullOrEmpty(clientIdClaim))
+                return BadRequest("Brak ID");
+
+            var clientId = int.Parse(clientIdClaim);
+            var movie = await _db.Movies.FindAsync(id);
+
+            if (movie == null)
+                return NotFound("Brak takiego filmu");
+
+            if (!movie.IsAvailable)
+                return BadRequest("Film niedostępny do wypożyczenia");
+
+            // Sprawdzanie czy klient już wypożycza
+            var activeRental = await _db.Rentals
+                .FirstOrDefaultAsync(r => r.ClientID == clientId &&
+                                         r.MovieID == id &&
+                                         r.ReturnDate == null);
+
+            if (activeRental != null)
+                return BadRequest("Masz już ten film wypożyczony");
+
+            var rental = new Rental
+            {
+                ClientID = clientId,
+                MovieID = id,
+                RentalDate = DateTime.UtcNow
+            };
+
+            _db.Rentals.Add(rental);
+            await _db.SaveChangesAsync();
+
+            _logger.LogInformation($"Film wypożyczony: {movie.Name} do ID: {clientId}");
+            return Ok("Film wypożyczony!");
+        }
+
+        //Zwróć - prawdę mówiąc nie wiem czy będzie potrzebne, ale wrzucam na wszelki
+        [ActionName("Return")]
+        [HttpPost("{id}")]
+        [Authorize(Policy = "ClientOnly")]
+        public async Task<ActionResult> ReturnMovie(int id)
+        {
+            var clientIdClaim = User.FindFirst("clientId")?.Value;
+            if (string.IsNullOrEmpty(clientIdClaim))
+                return BadRequest("ID klienta nie istnieje");
+
+            var clientId = int.Parse(clientIdClaim);
+
+            var rental = await _db.Rentals
+                .FirstOrDefaultAsync(r => r.ClientID == clientId &&
+                                         r.MovieID == id &&
+                                         r.ReturnDate == null);
+
+            if (rental == null)
+                return NotFound("Ten film nie jest wypożyczony");
+
+            rental.ReturnDate = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+
+            _logger.LogInformation($"Film zwrócony: Movie ID {id} przez Client ID: {clientId}");
+            return Ok("Film zwrócony");
+        }
+
+        //Oceń film
+        [ActionName("Rate")]
+        [HttpPost("{id}")]
+        [Authorize(Policy = "ClientOnly")]
+        public async Task<ActionResult> RateMovie(int id, [FromBody] RateMovieDto ratingDto)
+        {
+            var clientIdClaim = User.FindFirst("clientId")?.Value;
+            if (string.IsNullOrEmpty(clientIdClaim))
+                return BadRequest("Klient nie istnieje");
+
+            var clientId = int.Parse(clientIdClaim);
+
+            // Sprawdź czy klient już kiedyś wypożyczył
+            var hasRented = await _db.Rentals
+                .AnyAsync(r => r.ClientID == clientId && r.MovieID == id);
+
+            //Ta reguła może nie być konieczna, ale jeśli tylko wypożyczamy, to można zostawić
+            if (!hasRented)
+                return BadRequest("Możesz ocenić tylko te filmy, które wypożyczysz");
+
+            // Sprawdź czy istnieje rating
+            var existingRating = await _db.Ratings
+                .FirstOrDefaultAsync(r => r.ClientID == clientId && r.MovieID == id);
+
+            if (existingRating != null)
+            {
+                // ... a jeśli istnieje to update
+                existingRating.Value = ratingDto.Rating;
+                existingRating.Comment = ratingDto.Comment;
+                existingRating.RatedAt = DateTime.UtcNow;
+            }
+            else
+            {
+                // Utwórz nowy rating
+                var rating = new Rating
+                {
+                    ClientID = clientId,
+                    MovieID = id,
+                    Value = ratingDto.Rating,
+                    Comment = ratingDto.Comment,
+                    RatedAt = DateTime.UtcNow
+                };
+                _db.Ratings.Add(rating);
+            }
+
+            await _db.SaveChangesAsync();
+            _logger.LogInformation($"Film oceniony: ID filmu {id} przez klienta: {clientId}, Rating: {ratingDto.Rating}");
+            return Ok("Ocena wysłana poprawnie");
+        }
+
+        //Moje wypożyczenia
+        [ActionName("MyRentals")]
+        [HttpGet]
+        [Authorize(Policy = "ClientOnly")]
+        public async Task<ActionResult<List<RentalDto>>> GetMyRentals()
+        {
+            var clientIdClaim = User.FindFirst("clientId")?.Value;
+            if (string.IsNullOrEmpty(clientIdClaim))
+                return BadRequest("Klient nie istnieje");
+
+            var clientId = int.Parse(clientIdClaim);
+
+            var rentals = await _db.Rentals
+                .Include(r => r.Movie)
+                .Where(r => r.ClientID == clientId)
+                .OrderByDescending(r => r.RentalDate)
+                .Select(r => new RentalDto
+                {
+                    Id = r.ID,
+                    MovieId = r.MovieID,
+                    MovieName = r.Movie.Name,
+                    MovieType = r.Movie.Type,
+                    RentalDate = r.RentalDate,
+                    ReturnDate = r.ReturnDate,
+                    IsActive = r.ReturnDate == null
+                })
+                .ToListAsync();
+
+            return Ok(rentals);
         }
     }
 

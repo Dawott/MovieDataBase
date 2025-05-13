@@ -54,5 +54,15 @@ namespace Projekt.API.DTOs
             public required string Name { get; set; }
             public required string Lastname { get; set; }
         }
+
+        public class ChangePasswordDto
+        {
+            [Required]
+            public required string CurrentPassword { get; set; }
+
+            [Required]
+            [MinLength(6, ErrorMessage = "Nowe hasło musi mieć co najmniej 6 znaków")]
+            public required string NewPassword { get; set; }
+        }
     }
 }

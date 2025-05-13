@@ -53,7 +53,7 @@ namespace Projekt.API.Model
             modelBuilder.Entity<Rating>()
                 .HasIndex(r => new { r.ClientID, r.MovieID })
                 .IsUnique();
-
+            /*
             // Dane Seed już zhashowane
             var hasher = new Services.PasswordHasher();
 
@@ -93,7 +93,7 @@ namespace Projekt.API.Model
                 new Movie { ID = 2, Name = "Skazany na Shawshank", Type = "Dramat", Rating = 8.7, IsAvailable = true },
                 new Movie { ID = 3, Name = "Coco", Type = "Familijny", Rating = 7.5, IsAvailable = true });
 
-
+            */
         }
     }
 }

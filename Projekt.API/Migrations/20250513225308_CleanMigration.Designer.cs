@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Projekt.API.Model;
 
@@ -11,9 +12,11 @@ using Projekt.API.Model;
 namespace Projekt.API.Migrations
 {
     [DbContext(typeof(MoviesDBContext))]
-    partial class MoviesDBContextModelSnapshot : ModelSnapshot
+    [Migration("20250513225308_CleanMigration")]
+    partial class CleanMigration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -62,6 +65,22 @@ namespace Projekt.API.Migrations
                         .IsUnique();
 
                     b.ToTable("Clients");
+
+                    b.HasData(
+                        new
+                        {
+                            ID = 1,
+                            Lastname = "Kowalski",
+                            Name = "Jan",
+                            UserID = 1
+                        },
+                        new
+                        {
+                            ID = 2,
+                            Lastname = "Nowak",
+                            Name = "Anna",
+                            UserID = 2
+                        });
                 });
 
             modelBuilder.Entity("Projekt.API.Model.Movie", b =>
@@ -92,6 +111,32 @@ namespace Projekt.API.Migrations
                     b.HasKey("ID");
 
                     b.ToTable("Movies");
+
+                    b.HasData(
+                        new
+                        {
+                            ID = 1,
+                            IsAvailable = true,
+                            Name = "Harry Potter",
+                            Rating = 7.0,
+                            Type = "Fantasy"
+                        },
+                        new
+                        {
+                            ID = 2,
+                            IsAvailable = true,
+                            Name = "Skazany na Shawshank",
+                            Rating = 8.6999999999999993,
+                            Type = "Dramat"
+                        },
+                        new
+                        {
+                            ID = 3,
+                            IsAvailable = true,
+                            Name = "Coco",
+                            Rating = 7.5,
+                            Type = "Familijny"
+                        });
                 });
 
             modelBuilder.Entity("Projekt.API.Model.Rating", b =>
@@ -181,6 +226,32 @@ namespace Projekt.API.Migrations
                     b.HasKey("ID");
 
                     b.ToTable("Users");
+
+                    b.HasData(
+                        new
+                        {
+                            ID = 1,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Email = "jan.kowalski@example.com",
+                            PasswordHash = "6rHxyLo/hht170O4wmTrsQ==.L1ZHuJGOmRef671i6CSWTUQ2wYz9ZltYpbeiiqO0rNA=",
+                            Role = 0
+                        },
+                        new
+                        {
+                            ID = 2,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Email = "anna.nowak@example.com",
+                            PasswordHash = "ipo/aVenxn+dLqGuOgu2yQ==.L+ASz444Zsti+63zgaZ9l+y7gAYwJZcUKvOdsxSqBLg=",
+                            Role = 0
+                        },
+                        new
+                        {
+                            ID = 3,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Email = "admin@example.com",
+                            PasswordHash = "1TWd66Rq1k8EG4IHpVUeZQ==.2n+AK1JE5Nm5eG00sQsh7rdEzINf+hMZqDowexfEY4g=",
+                            Role = 1
+                        });
                 });
 
             modelBuilder.Entity("ClientMovie", b =>
