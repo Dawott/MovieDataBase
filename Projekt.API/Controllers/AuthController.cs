@@ -263,5 +263,14 @@ namespace Projekt.API.Controllers
             var emailRegex = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
             return Regex.IsMatch(email, emailRegex);
         }
+
+        [ActionName("Test")]
+        [HttpGet]
+        [AllowAnonymous]
+        public ActionResult Test()
+        {
+            _logger.LogInformation("Test endpoint hit");
+            return Ok(new { message = "API is working", time = DateTime.UtcNow });
+        }
     }
 }

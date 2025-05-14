@@ -31,9 +31,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="frontend\assets\" />
     <Folder Include="Migrations\Nowy folder\" />
     <Folder Include="Nowy folder\" />
   </ItemGroup>
-
 </Project>

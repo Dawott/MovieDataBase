@@ -1,4 +1,4 @@
-﻿const API_BASE = "https://localhost:5341/api";
+﻿const API_BASE = "https://localhost:7265/api";
 
 class ApiService {
     constructor() {
