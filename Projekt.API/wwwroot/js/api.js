@@ -1,4 +1,4 @@
-﻿const API_BASE = "https://localhost:7265/api";
+﻿const API_BASE_URL = "https://localhost:7267/api";
 
 class ApiService {
     constructor() {
@@ -36,6 +36,8 @@ class ApiService {
 
             return response.data;
         } catch (error) {
+            console.error("ApiService.login: Błąd podczas żądania", error); // Bardzo ważne!
+            console.error("ApiService.login: Szczegóły błędu Axios:", error.response, error.request, error.message, error.config);
             throw error.response?.data || error.message;
         }
     }
@@ -59,6 +61,8 @@ class ApiService {
 
             return response.data;
         } catch (error) {
+            console.error("ApiService.register: Błąd podczas żądania", error); // Bardzo ważne!
+            console.error("ApiService.register: Szczegóły błędu Axios:", error.response, error.request, error.message, error.config);
             throw error.response?.data || error.message;
         }
     }

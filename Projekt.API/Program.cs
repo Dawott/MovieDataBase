@@ -7,14 +7,20 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.OpenApi.Models;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 var moviesConnectionsString = builder.Configuration.GetConnectionString("MoviesDB");          
-builder.Services.AddDbContext<MoviesDBContext>(options =>options.UseSqlServer(moviesConnectionsString));    
+builder.Services.AddDbContext<MoviesDBContext>(options =>options.UseSqlServer(moviesConnectionsString));
 
-builder.Services.AddControllers();
+//Zapobieganie zapêtleniom JSON - pod nieobecnoœæ DTO
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+    options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+});
 builder.Services.AddEndpointsApiExplorer();
 //Config Swaggera pod Tokeny
 builder.Services.AddSwaggerGen(c =>
@@ -115,17 +121,19 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseDefaultFiles();
-app.UseStaticFiles(new StaticFileOptions
+/*app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(
         Path.Combine(builder.Environment.ContentRootPath, "Uploads")),
     RequestPath = "/Uploads"
-});
+});*/
+app.UseStaticFiles();
+app.UseDefaultFiles();
 
 //CORS  
 app.UseCors("AllowAll");
 app.UseSerilogRequestLogging();
+app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

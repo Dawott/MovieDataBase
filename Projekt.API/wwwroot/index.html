@@ -6,7 +6,7 @@
     <title>Baza Wypożyczeń Filmów - logowanie</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>    
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body {
@@ -185,9 +185,12 @@
 
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
+            console.log("Próba logowania z danymi:", { email, password });
 
             try {
+                console.log("Wywołuję api.login...");
                 const response = await api.login(email, password);
+                console.log("Odpowiedź z api.login otrzymana:", response);
 
                 Swal.fire({
                     icon: 'success',
@@ -218,6 +221,7 @@
             const email = document.getElementById('registerEmail').value;
             const password = document.getElementById('registerPassword').value;
             const passwordConfirm = document.getElementById('registerPasswordConfirm').value;
+            console.log("Próba rejestracji z danymi:", { email, password });
 
             if (password !== passwordConfirm) {
                 Swal.fire({
@@ -229,8 +233,9 @@
             }
 
             try {
+                console.log("Wywołuję api.register...");
                 const response = await api.register(email, password, name, lastname);
-
+                console.log("Odpowiedź z api.register otrzymana:", response);
                 Swal.fire({
                     icon: 'success',
                     title: 'Rejestracja poprawna!',
@@ -252,7 +257,6 @@
             }
         }
     </script>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
