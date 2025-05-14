@@ -1,0 +1,657 @@
+﻿<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wypożyczalnia filmów - admin panel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .navbar {
+            background: linear-gradient(90deg, #e74c3c 0%, #c0392b 100%);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .sidebar {
+            background: white;
+            min-height: calc(100vh - 56px);
+            box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+        }
+
+            .sidebar .nav-link {
+                color: #333;
+                padding: 15px 20px;
+                border-left: 3px solid transparent;
+            }
+
+                .sidebar .nav-link:hover {
+                    background: #f8f9fa;
+                    border-left-color: #e74c3c;
+                }
+
+                .sidebar .nav-link.active {
+                    background: #f8f9fa;
+                    border-left-color: #e74c3c;
+                    color: #e74c3c;
+                }
+
+        .content-area {
+            padding: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+            .stat-card h3 {
+                margin: 0;
+                color: #e74c3c;
+            }
+
+        .table-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+        }
+
+        .movie-thumbnail {
+            width: 50px;
+            height: 75px;
+            object-fit: cover;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#"><i class="bi bi-film"></i>Admin Panel</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="navbar-collapse collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <span class="navbar-text me-3">
+                            <i class="bi bi-shield-lock"></i>Admin: <span id="adminEmail"></span>
+                        </span>
+                    </li>
+                    <li class="nav-item">
+                        <button class="btn btn-outline-light" onclick="logout()">
+                            <i class="bi bi-box-arrow-right"></i>Wyloguj
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-2 sidebar p-0">
+                <nav class="nav flex-column">
+                    <a class="nav-link active" href="#dashboard" data-bs-toggle="tab">
+                        <i class="bi bi-speedometer2"></i>Dashboard
+                    </a>
+                    <a class="nav-link" href="#movies" data-bs-toggle="tab">
+                        <i class="bi bi-film"></i>Filmy
+                    </a>
+                    <a class="nav-link" href="#users" data-bs-toggle="tab">
+                        <i class="bi bi-people"></i>Użytkownicy
+                    </a>
+                    <a class="nav-link" href="#rentals" data-bs-toggle="tab">
+                        <i class="bi bi-clock-history"></i>Wypożyczenia
+                    </a>
+                </nav>
+            </div>
+
+            <!-- Zawartość -->
+            <div class="col-md-10 content-area">
+                <div class="tab-content">
+                    <!-- Dashboard -->
+                    <div class="tab-pane fade show active" id="dashboard">
+                        <h2 class="mb-4">Dashboard</h2>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <i class="bi bi-film fs-1 text-primary"></i>
+                                    <h3 id="totalMovies">0</h3>
+                                    <p>Wszystkie filmy</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <i class="bi bi-people fs-1 text-success"></i>
+                                    <h3 id="totalUsers">0</h3>
+                                    <p>Wszyscy użytkownicy</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <i class="bi bi-clock fs-1 text-warning"></i>
+                                    <h3 id="activeRentals">0</h3>
+                                    <p>Aktywne wypożyczenia</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <i class="bi bi-star fs-1 text-info"></i>
+                                    <h3 id="totalRatings">0</h3>
+                                    <p>Pełne oceny</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Zakładka filmy -->
+                    <div class="tab-pane fade" id="movies">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h2>Zarządzanie Filmami</h2>
+                            <button class="btn btn-primary" onclick="showAddMovieModal()">
+                                <i class="bi bi-plus-circle"></i>Dodaj Film
+                            </button>
+                        </div>
+
+                        <div class="table-container">
+                            <table class="table-hover table">
+                                <thead>
+                                    <tr>
+                                        <th>Okładka</th>
+                                        <th>ID</th>
+                                        <th>Nazwa</th>
+                                        <th>Gatunek</th>
+                                        <th>Ocena</th>
+                                        <th>Dostępność</th>
+                                        <th>Akcje</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="moviesTableBody">
+                                    <!-- Tutaj pojawią się filmy -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Zakładka Userzy -->
+                    <div class="tab-pane fade" id="users">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h2>Zarządzanie Użytkownikami</h2>
+                            <button class="btn btn-primary" onclick="showAddAdminModal()">
+                                <i class="bi bi-shield-plus"></i>Dodaj Admina
+                            </button>
+                        </div>
+
+                        <div class="table-container">
+                            <table class="table-hover table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Imię i nazwisko</th>
+                                        <th>Email</th>
+                                        <th>Rola</th>
+                                        <th>Akcje</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usersTableBody">
+                                    <!-- Użytkownicy -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Zakładka Wypożyczenia -->
+                    <div class="tab-pane fade" id="rentals">
+                        <h2 class="mb-4">All Rentals</h2>
+
+                        <div class="table-container">
+                            <table class="table-hover table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Klient</th>
+                                        <th>Filmy</th>
+                                        <th>Data Wypożyczenia</th>
+                                        <th>Data Zwrotu</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="rentalsTableBody">
+                                    <!-- Wypożyczenia -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal z Filmami -->
+    <div class="modal fade" id="movieModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="movieModalTitle">Dodaj Film</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="movieForm" onsubmit="saveMovie(event)">
+                    <div class="modal-body">
+                        <input type="hidden" id="movieId">
+                        <div class="mb-3">
+                            <label class="form-label">Nazwa</label>
+                            <input type="text" class="form-control" id="movieName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Gatunek</label>
+                            <input type="text" class="form-control" id="movieType" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Początkowa Ocena</label>
+                            <input type="number" class="form-control" id="movieRating" min="0" max="10" step="0.5" required>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="movieAvailable" checked>
+                                <label class="form-check-label" for="movieAvailable">
+                                    Dostępne do wypożyczenia
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                        <button type="submit" class="btn btn-primary">Zapisz Film</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Modal -->
+    <div class="modal fade" id="adminModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Dodaj Admina</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="adminForm" onsubmit="addAdmin(event)">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" id="adminEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Hasło</label>
+                            <input type="password" class="form-control" id="adminPassword" required minlength="6">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                        <button type="submit" class="btn btn-primary">Dodaj Admina</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        // Sprawdź rolę Admina
+        requireAuth();
+        if (!api.isAdmin()) {
+            window.location.href = '/dashboard.html';
+        }
+
+        // Załaduj info o adminie
+        document.getElementById('adminEmail').textContent = localStorage.getItem('userEmail');
+
+        // Ładowanie
+        loadDashboard();
+
+        // Zakładka z nawigacją
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                e.target.classList.add('active');
+
+                const target = e.target.getAttribute('href');
+                switch(target) {
+                    case '#dashboard':
+                        loadDashboard();
+                        break;
+                    case '#movies':
+                        loadMovies();
+                        break;
+                    case '#users':
+                        loadUsers();
+                        break;
+                    case '#rentals':
+                        loadRentals();
+                        break;
+                }
+            });
+        });
+
+        async function loadDashboard() {
+            try {
+                const [movies, users] = await Promise.all([
+                    api.getMovies(),
+                    api.getClients()
+                ]);
+
+                document.getElementById('totalMovies').textContent = movies.length;
+                document.getElementById('totalUsers').textContent = users.length;
+
+                // Policz aktualne wypożyczenia i oceny
+                let activeRentals = 0;
+                let totalRatings = 0;
+
+                movies.forEach(movie => {
+                    if (movie.rentals) {
+                        activeRentals += movie.rentals.filter(r => !r.returnDate).length;
+                    }
+                    if (movie.ratings) {
+                        totalRatings += movie.ratings.length;
+                    }
+                });
+
+                document.getElementById('activeRentals').textContent = activeRentals;
+                document.getElementById('totalRatings').textContent = totalRatings;
+            } catch (error) {
+                console.error('Błąd podczas ładowania danych', error);
+            }
+        }
+
+        async function loadMovies() {
+            try {
+                const movies = await api.getMovies();
+                const tbody = document.getElementById('moviesTableBody');
+
+                tbody.innerHTML = movies.map(movie => `
+                    <tr>
+                        <td>
+                            <img src="${movie.coverImagePath ? api.getMovieCoverUrl(movie.id) : '/api/placeholder/50/75'}"
+                                 class="movie-thumbnail" alt="${movie.name}">
+                        </td>
+                        <td>${movie.id}</td>
+                        <td>${movie.name}</td>
+                        <td>${movie.type}</td>
+                        <td>${movie.rating}</td>
+                        <td>
+                            <span class="badge bg-${movie.isAvailable ? 'success' : 'danger'}">
+                                ${movie.isAvailable ? 'Dostępny' : 'Niedostępny'}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn btn-sm btn-primary" onclick="editMovie(${movie.id})">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-info" onclick="uploadCover(${movie.id})">
+                                    <i class="bi bi-image"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteMovie(${movie.id})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                Swal.fire('Error', 'Nie udało się załadować filmów', 'error');
+            }
+        }
+
+        async function loadUsers() {
+            try {
+                const clients = await api.getClients();
+                const currentUser = await api.getCurrentUser();
+
+                const tbody = document.getElementById('usersTableBody');
+
+                // Dodaj aktualnego admna
+                let html = `
+                    <tr>
+                        <td>${currentUser.id}</td>
+                        <td>-</td>
+                        <td>${currentUser.email}</td>
+                        <td><span class="badge bg-danger">Administrator</span></td>
+                        <td>-</td>
+                    </tr>
+                `;
+
+                // Dodaj klienta
+                html += clients.map(client => `
+                    <tr>
+                        <td>${client.id}</td>
+                        <td>${client.name} ${client.lastname}</td>
+                        <td>${client.user?.email || '-'}</td>
+                        <td><span class="badge bg-primary">Klient</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-danger" onclick="deleteClient(${client.id})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+
+                tbody.innerHTML = html;
+            } catch (error) {
+                Swal.fire('Error', 'Nie udało się załadować klientów', 'error');
+            }
+        }
+
+        async function loadRentals() {
+            try {
+                const clients = await api.getClients();
+                const tbody = document.getElementById('rentalsTableBody');
+
+                let allRentals = [];
+
+                // Zbierz wszystkie wypożyczenia
+                for (const client of clients) {
+                    if (client.rentals) {
+                        client.rentals.forEach(rental => {
+                            allRentals.push({
+                                ...rental,
+                                clientName: `${client.name} ${client.lastname}`,
+                                clientEmail: client.user?.email
+                            });
+                        });
+                    }
+                }
+
+                // Sortuj po dacie wypożyczenia
+                allRentals.sort((a, b) => new Date(b.rentalDate) - new Date(a.rentalDate));
+
+                tbody.innerHTML = allRentals.map(rental => `
+                    <tr>
+                        <td>${rental.id}</td>
+                        <td>${rental.clientName}</td>
+                        <td>${rental.movie?.name || '-'}</td>
+                        <td>${new Date(rental.rentalDate).toLocaleDateString()}</td>
+                        <td>${rental.returnDate ? new Date(rental.returnDate).toLocaleDateString() : '-'}</td>
+                        <td>
+                            <span class="badge bg-${rental.returnDate ? 'secondary' : 'success'}">
+                                ${rental.returnDate ? 'Zwrócone' : 'Aktywne'}
+                            </span>
+                        </td>
+                    </tr>
+                `).join('');
+
+                if (allRentals.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center">Nie odnaleziono wypożyczeń</td></tr>';
+                }
+            } catch (error) {
+                Swal.fire('Error', 'Błąd podczas ładowania wypożyczeń', 'error');
+            }
+        }
+
+        function showAddMovieModal() {
+            document.getElementById('movieModalTitle').textContent = 'Dodaj film';
+            document.getElementById('movieForm').reset();
+            document.getElementById('movieId').value = '';
+            const modal = new bootstrap.Modal(document.getElementById('movieModal'));
+            modal.show();
+        }
+
+        async function editMovie(id) {
+            try {
+                const movie = await api.getMovie(id);
+                document.getElementById('movieModalTitle').textContent = 'Edytuj Film';
+                document.getElementById('movieId').value = movie.id;
+                document.getElementById('movieName').value = movie.name;
+                document.getElementById('movieType').value = movie.type;
+                document.getElementById('movieRating').value = movie.rating;
+                document.getElementById('movieAvailable').checked = movie.isAvailable;
+
+                const modal = new bootstrap.Modal(document.getElementById('movieModal'));
+                modal.show();
+            } catch (error) {
+                Swal.fire('Error', 'Nie udało się załadować szczegółów filmu', 'error');
+            }
+        }
+
+        async function saveMovie(event) {
+            event.preventDefault();
+
+            const movieData = {
+                name: document.getElementById('movieName').value,
+                type: document.getElementById('movieType').value,
+                rating: parseFloat(document.getElementById('movieRating').value),
+                isAvailable: document.getElementById('movieAvailable').checked
+            };
+
+            const movieId = document.getElementById('movieId').value;
+
+            try {
+                if (movieId) {
+                    movieData.id = parseInt(movieId);
+                    await api.updateMovie(movieData);
+                    Swal.fire('Sukces', 'Film zaktualizowany!', 'success');
+                } else {
+                    await api.addMovie(movieData);
+                    Swal.fire('Sukces', 'Film dodany!', 'success');
+                }
+
+                bootstrap.Modal.getInstance(document.getElementById('movieModal')).hide();
+                loadMovies();
+            } catch (error) {
+                Swal.fire('Error', error.message || 'Nie udało się załadować filmu', 'error');
+            }
+        }
+
+        async function deleteMovie(id) {
+            const result = await Swal.fire({
+                title: 'Czy na pewno?',
+                text: "Akcji nie można cofnąć!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Tak, skasuj!'
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    await api.deleteMovie(id);
+                    Swal.fire('Skasowano!', 'Film skasowany.', 'success');
+                    loadMovies();
+                } catch (error) {
+                    Swal.fire('Error', error.message || 'Nie udało się skasować', 'error');
+                }
+            }
+        }
+
+        async function uploadCover(movieId) {
+            const { value: file } = await Swal.fire({
+                title: 'Dodaj okładkę',
+                input: 'file',
+                inputAttributes: {
+                    'accept': 'image/*',
+                    'aria-label': 'Dodaj okładkę'
+                }
+            });
+
+            if (file) {
+                try {
+                    await api.uploadMovieCover(movieId, file);
+                    Swal.fire('Sukces', 'Okładka dodana!', 'success');
+                    loadMovies();
+                } catch (error) {
+                    Swal.fire('Error', error.message || 'Nie udało się dodać okładki', 'error');
+                }
+            }
+        }
+
+        function showAddAdminModal() {
+            document.getElementById('adminForm').reset();
+            const modal = new bootstrap.Modal(document.getElementById('adminModal'));
+            modal.show();
+        }
+
+        async function addAdmin(event) {
+            event.preventDefault();
+
+            const email = document.getElementById('adminEmail').value;
+            const password = document.getElementById('adminPassword').value;
+
+            try {
+                await api.registerAdmin(email, password);
+                Swal.fire('Sukces', 'Admin dodany!', 'success');
+                bootstrap.Modal.getInstance(document.getElementById('adminModal')).hide();
+                loadUsers();
+            } catch (error) {
+                Swal.fire('Error', error.message || 'Nie udało się dodać admina', 'error');
+            }
+        }
+
+        async function deleteClient(id) {
+            const result = await Swal.fire({
+                title: 'Na pewno skasować?',
+                text: "Konto użytkownika zostanie usunięte trwale!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: 'Skasuj!'
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    await api.deleteClient(id);
+                    Swal.fire('Skasowano!', 'Klient został skasowany.', 'success');
+                    loadUsers();
+                } catch (error) {
+                    Swal.fire('Error', error.message || 'Nie udało się skasować klienta', 'error');
+                }
+            }
+        }
+
+        function logout() {
+            api.logout();
+        }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
