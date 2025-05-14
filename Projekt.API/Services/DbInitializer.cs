@@ -17,7 +17,7 @@ namespace Projekt.API.Services
             if (context.Users.Any())
                 return; // Baza zseedowana
 
-            // Twórz userów
+            // Twórz userów - TO ZŁY POMYsL, ale do dema wystarczy
             var users = new[]
             {
                 new User
