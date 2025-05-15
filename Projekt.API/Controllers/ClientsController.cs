@@ -32,7 +32,11 @@ namespace Projekt.API.Controllers
             try
             {
                 await Task.Delay(3000);
-                return Ok(await _db.Clients.ToListAsync());
+                return Ok(await _db.Clients
+            .Include(c => c.User)
+            .Include(c => c.Rentals)
+                .ThenInclude(r => r.Movie)
+            .ToListAsync());
             }
             catch (Exception ex)
             {

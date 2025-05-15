@@ -38,6 +38,7 @@ namespace Projekt.API.Controllers
                 await Task.Delay(1000);
                 var movies = await _db.Movies
                      .Include(m => m.Ratings)
+                     .Include(m => m.Rentals)
                      .ToListAsync();
                 //Kalkulacja Ratingu - ale do sprawdzenia, czy nie można tego jakoś mądrzej zliczać
                 foreach (var movie in movies)
