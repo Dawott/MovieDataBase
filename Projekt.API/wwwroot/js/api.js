@@ -187,12 +187,15 @@ class ApiService {
     }
 
     async getMyRentals() {
+        console.log('getMyRentals w API'); //DEbug
         try {
             const response = await axios.get(`${API_BASE_URL}/Movies/MyRentals`, {
                 headers: this.getHeaders()
             });
+            console.log('Odpowiedź API MyRentals:', response.data);
             return response.data;
         } catch (error) {
+            console.error('Błąd w myrentals:', error);
             throw error.response?.data || error.message;
         }
     }

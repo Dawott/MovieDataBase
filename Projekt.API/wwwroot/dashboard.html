@@ -4,20 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wypożyczalnia Filmów - Dashboard</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+   
     <style>
         body {
             background-color: #f8f9fa;
         }
-
+       
         .navbar {
             background: linear-gradient(90deg, #3498db 0%, #9b59b6 100%);
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-
+        
         .movie-card {
             transition: transform 0.3s;
             height: 100%;
@@ -44,6 +45,18 @@
             border-radius: 20px;
             font-weight: bold;
         }
+        .tab-pane.active {
+            display: block !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            border: 1px dashed #ccc;
+            padding: 15px;
+        }
+
+            .tab-pane.active.show {
+                display: block !important;
+                opacity: 1 !important;
+            }
 
         .rental-status {
             position: absolute;
@@ -53,7 +66,11 @@
         }
 
         .tab-content {
-            margin-top: 20px;
+            border: 1px solid #eee;
+            padding: 15px;
+            min-height: 300px;
+            clear: both;
+            overflow: auto;
         }
 
         .rental-item {
@@ -66,6 +83,20 @@
 
         .rating-stars {
             color: #f39c12;
+        }
+        
+        .nav-link {
+            cursor: pointer !important;
+        }
+
+            .nav-link.active {
+                font-weight: bold;
+                border-bottom: 2px solid currentColor !important;
+            }
+
+        .tab-pane {
+            min-height: 300px;
+            padding-bottom: 20px;
         }
 
         .profile-section {
@@ -80,25 +111,25 @@
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
-            <a class="navbar-brand" href="#"><i class="bi bi-film"></i>Wypożyczalnia Filmów</a>
+            <a class="navbar-brand" href="#"><i class="bi bi-film"></i> Wypożyczalnia Filmów</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="navbar-collapse collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link active" href="#movies" data-bs-toggle="tab">
-                            <i class="bi bi-collection-play"></i>Przeglądaj filmy
+                        <a class="nav-link active" href="#movies" data-bs-toggle="tab" id="tabMoviesAll">
+                            <i class="bi bi-collection-play"></i> Przeglądaj filmy
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#rentals" data-bs-toggle="tab">
-                            <i class="bi bi-clock-history"></i>Moje wypożyczenia
+                        <a class="nav-link" href="#rentals" data-bs-toggle="tab" id="tabRentalsAll">
+                            <i class="bi bi-clock-history"></i> Moje wypożyczenia
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#profile" data-bs-toggle="tab">
-                            <i class="bi bi-person"></i>Profil
+                        <a class="nav-link" href="#profile" data-bs-toggle="tab" id="tabProfileAll">
+                            <i class="bi bi-person"></i> Profil
                         </a>
                     </li>
                 </ul>
@@ -110,7 +141,7 @@
                     </li>
                     <li class="nav-item">
                         <button class="btn btn-outline-light" onclick="logout()">
-                            <i class="bi bi-box-arrow-right"></i>Wyloguj
+                            <i class="bi bi-box-arrow-right"></i> Wyloguj
                         </button>
                     </li>
                 </ul>
@@ -132,7 +163,7 @@
             <!-- Zakładka z pożyczonymi -->
             <div class="tab-pane fade" id="rentals">
                 <h2 class="mb-4">Moje wypożyczenia</h2>
-                <div id="rentalsList">
+                <div class="row" id="rentalsList">
                     
                 </div>
             </div>
@@ -217,8 +248,9 @@
     </div>
 
     <script src="js/api.js"></script>
+    
     <script>
-        // Sprawdź uwierzytelnienie
+    // Sprawdź uwierzytelnienie
         requireAuth();
 
         // Ładuj info o userze
@@ -229,13 +261,99 @@
         loadProfile();
 
         // Nawigacja
+        /*
         document.querySelectorAll('.nav-link').forEach(link => {
-            link.addEventListener('click', (e) => {
-                const target = e.target.getAttribute('href');
-                if (target === '#rentals') {
-                    loadRentals();
-                }
+                link.addEventListener('click', (e) => {
+                    const target = e.currentTarget.getAttribute('href');
+                    if (target === '#rentals') {
+                        console.log("Kliknięto zakładkę Wypożyczenia, wywołuję loadRentals()");
+                        loadRentals();
+                    }
+                    if (target === '#profile') {
+                        console.log("Kliknięto zakładkę Profil, wywołuję loadProfile()");
+                        loadProfile();
+                    }
+                });
+            });*/
+
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log("Dodanie logiki manualnej");
+
+            // Trigger do nawigacji - debug
+            const tabLinks = document.querySelectorAll('.nav-link[href^="#"]');
+
+            // Manualne kliknięcie
+            tabLinks.forEach(link => {
+                link.addEventListener('click', function (event) {
+                    // Prevent default
+                    event.preventDefault();
+
+                    // Pobierz id
+                    const targetId = this.getAttribute('href').substring(1); 
+                    console.log(`Ręczna zmiana: ${targetId}`);
+
+                    document.querySelectorAll('.tab-pane').forEach(tab => {
+                        tab.classList.remove('active', 'show');
+                    });
+
+                    document.querySelectorAll('.nav-link').forEach(navLink => {
+                        navLink.classList.remove('active');
+                    });
+
+                    // Aktywuj link
+                    this.classList.add('active');
+
+                    // Aktywuj zakładkę
+                    const targetTab = document.getElementById(targetId);
+                    if (targetTab) {
+                        targetTab.classList.add('active', 'show');
+                        console.log(`Zakładka aktywowana: ${targetId}`);
+
+                        // Ładuj kontent
+                        if (targetId === 'rentals') {
+                            console.log("Ladowanie wypozyczen");
+                            loadRentals();
+                        }
+                        else if (targetId === 'profile') {
+                            console.log("Ladowanie profili");
+                            loadProfile();
+                        }
+                    } else {
+                        console.error(`Zakładka id ${targetId} nieznaleziona!`);
+                    }
+                });
             });
+
+            // Funkcje siłowe
+            window.forceActivateTab = function (tabId) {
+                console.log(`Przeładuj zakładkę: ${tabId}`);
+
+                document.querySelectorAll('.tab-pane').forEach(tab => {
+                    tab.classList.remove('active', 'show');
+                });
+
+                document.querySelectorAll('.nav-link').forEach(navLink => {
+                    navLink.classList.remove('active');
+                });
+
+                const targetTab = document.getElementById(tabId);
+                if (targetTab) {
+                    targetTab.classList.add('active', 'show');
+
+                    const navLink = document.querySelector(`.nav-link[href="#${tabId}"]`);
+                    if (navLink) {
+                        navLink.classList.add('active');
+                    }
+
+                    if (tabId === 'rentals') {
+                        loadRentals();
+                    } else if (tabId === 'profile') {
+                        loadProfile();
+                    }
+
+                    console.log(`Zakładka ${tabId} aktywowano i treść się ładuje`);
+                }
+            };
         });
 
         async function loadMovies() {
@@ -267,7 +385,7 @@
             } catch (error) {
                 Swal.fire('Error', 'Nie załadowano filmów', 'error');
             }
-        }
+        };
 
         async function showMovieDetails(movieId) {
             try {
@@ -326,7 +444,7 @@
             } catch (error) {
                 Swal.fire('Error', 'Błąd w ładowaniu szczegółów', 'error');
             }
-        }
+        };
 
         async function rentMovie(movieId) {
             try {
@@ -337,7 +455,7 @@
             } catch (error) {
                 Swal.fire('Error', error.message || 'Nie udało się wypożyczyć', 'error');
             }
-        }
+        };
 
         async function returnMovie(movieId) {
             try {
@@ -348,7 +466,7 @@
             } catch (error) {
                 Swal.fire('Error', error.message || 'Nie udało się zwrócić', 'error');
             }
-        }
+        };
 
         async function showRateModal(movieId) {
             const { value: formValues } = await Swal.fire({
@@ -376,14 +494,21 @@
                     Swal.fire('Error', error.message || 'Nie udało się ocenić', 'error');
                 }
             }
-        }
+        };
 
         async function loadRentals() {
+            console.log('Call do loadRentals'); //debug
             try {
                 const rentals = await api.getMyRentals();
+                console.log('Rentals data:', rentals); //debug
                 const rentalsList = document.getElementById('rentalsList');
 
-                if (rentals.length === 0) {
+                if (!rentalsList) {
+                    console.error('rentalsList - brak elementu'); //debug
+                    return;
+                }
+
+                if (!rentals || rentals.length === 0) {
                     rentalsList.innerHTML = '<p class="text-muted">Jeszcze nic nie wypożyczasz</p>';
                     return;
                 }
@@ -393,8 +518,8 @@
                         <div class="row align-items-center">
                             <div class="col-md-8">
                                 <h5>${rental.movieName}</h5>
-                                <p class="mb-1">Type: ${rental.movieType}</p>
-                                <p class="mb-1">Rented: ${new Date(rental.rentalDate).toLocaleDateString()}</p>
+                                <p class="mb-1">Gatunek: ${rental.movieType}</p>
+                                <p class="mb-1">Wypożyczono: ${new Date(rental.rentalDate).toLocaleDateString()}</p>
                                 ${rental.returnDate ? `<p class="mb-1">Zwrócono: ${new Date(rental.returnDate).toLocaleDateString()}</p>` : ''}
                                 <span class="badge bg-${rental.isActive ? 'success' : 'secondary'}">
                                     ${rental.isActive ? 'Aktywny' : 'Zwrócony'}
@@ -404,7 +529,7 @@
                                 ${rental.isActive ?
                                     `<button class="btn btn-warning" onclick="returnMovie(${rental.movieId})">
                                         <i class="bi bi-arrow-return-left"></i>Zwróć
-                                    </button>` :
+                                    </button>`:
                                     `<button class="btn btn-info" onclick="showRateModal(${rental.movieId})">
                                         <i class="bi bi-star"></i>Oceń
                                     </button>`
@@ -413,10 +538,11 @@
                         </div>
                     </div>
                 `).join('');
+                console.log('Wypożyczenie widoczne');
             } catch (error) {
-                Swal.fire('Error', 'Nieudało się załadować wypożyczeń', 'error');
+                Swal.fire('Error', 'Nie udało się załadować wypożyczeń', 'error');
             }
-        }
+        };
 
         async function loadProfile() {
             try {
@@ -427,7 +553,7 @@
             } catch (error) {
                 console.error('Nie udało się załadować profilu', error);
             }
-        }
+        };
 
         async function updateProfile(event) {
             event.preventDefault();
@@ -445,7 +571,7 @@
             } catch (error) {
                 Swal.fire('Error', 'Nie udało się zauktualizować profilu', 'error');
             }
-        }
+        };
 
         async function changePassword(event) {
             event.preventDefault();
@@ -466,13 +592,18 @@
             } catch (error) {
                 Swal.fire('Error', error.message || 'Nie udało się zmienić hasła', 'error');
             }
-        }
+        };
+
+        window.addEventListener('error', function (event) {
+            console.error('UNHANDLED ERROR:', event.error || event.message);
+        });
 
         function logout() {
             api.logout();
-        }
+        };
+
     </script>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
